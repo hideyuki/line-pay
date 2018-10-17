@@ -5,13 +5,14 @@ require("dotenv").config();
 const router = require("express").Router();
 const session = require("express-session");
 const debug = require("debug")("line-pay:module");
-const request = require("request");
+const requestOrig = require("request");
 const lossless_json = require("lossless-json");
 const api_version = "v2";
 
+let request = null
+
 let Error = require("./line-pay-error.js");
 Promise = require("bluebird");
-Promise.promisifyAll(request);
 
 /**
 @class
@@ -28,7 +29,7 @@ class LinePay {
     */
     constructor(options){
         const required_params = ["channelId", "channelSecret"];
-        const optional_params = ["hostname", "isSandbox", "sessionOptions"];
+        const optional_params = ["hostname", "isSandbox", "sessionOptions", "proxy"];
 
         // Check if required parameters are all set.
         required_params.map((param) => {
@@ -53,6 +54,13 @@ class LinePay {
             this.apiHostname = "api-pay.line.me";
         }
         this.apiHostname = options.hostname || this.apiHostname;
+
+        let requestOpt = {}
+        if (options.proxy) {
+          requestOpt.proxy = options.proxy
+        }
+        request = requestOrig.defaults(requestOpt)
+        Promise.promisifyAll(request)
 
         this.headers = {
             "X-LINE-ChannelId": this.channelId,
